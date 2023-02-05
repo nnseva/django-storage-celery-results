@@ -91,7 +91,7 @@ GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
 
 For the second, you can use one settings variable to provide all necessary
 parameters directly to the storage backend constructor (see the particular
-storage backend constructor names inside the storage backend source code):
+storage backend constructor parameter names inside the storage backend source code):
 
 ```python
 from google.oauth2 import service_account
@@ -124,9 +124,9 @@ see also the current [documentation](https://docs.djangoproject.com/en/stable/re
 CELERY_RESULT_STORAGE = 'django.core.files.storage.FileSystemStorage'
 ```
 
-`settings.py` variable | backend constructor parameter | Meaning from doc
--------------------------------------------------------------------------
-MEDIA_ROOT             | location                      | Absolute filesystem path to the directory that will hold the files.
+|`settings.py` variable | backend constructor parameter | Meaning from doc|
+|-----------------------|-------------------------------|-----------------|
+|MEDIA_ROOT             | location                      | Absolute filesystem path to the directory that will hold the files.|
 
 ## Django Storages package
 
@@ -147,22 +147,22 @@ the backend constructor parameters.
 CELERY_RESULT_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 ```
 
-`settings.py` variable | backend constructor parameter | Meaning from doc
--------------------------------------------------------------------------
-AWS_S3_ACCESS_KEY_ID, AWS_ACCESS_KEY_ID|access_key| Access Key
-AWS_S3_SECRET_ACCESS_KEY, AWS_SECRET_ACCESS_KEY|secret_key| Access Secret
-AWS_STORAGE_BUCKET_NAME|bucket_name| Bucket Name
-AWS_LOCATION|location| Storage Location (folder) inside a bucket
+|`settings.py` variable | backend constructor parameter | Meaning from doc|
+|-----------------------|-------------------------------|-----------------|
+|AWS_S3_ACCESS_KEY_ID, AWS_ACCESS_KEY_ID|access_key| Access Key|
+|AWS_S3_SECRET_ACCESS_KEY, AWS_SECRET_ACCESS_KEY|secret_key| Access Secret|
+|AWS_STORAGE_BUCKET_NAME|bucket_name| Bucket Name|
+|AWS_LOCATION|location| Storage Location (folder) inside a bucket|
 
 ### Google Cloud Storage
 
-`settings.py` variable | backend constructor parameter | Meaning from doc
--------------------------------------------------------------------------
-GS_CREDENTIALS|credentials| Credentials object created by the Google library
-GS_BUCKET_NAME|bucket_name| Bucket Name
-GS_LOCATION|location| Storage Location (folder) inside a bucket
+|`settings.py` variable | backend constructor parameter | Meaning from doc|
+|-----------------------|-------------------------------|-----------------|
+|GS_CREDENTIALS|credentials| Credentials object created by the Google library|
+|GS_BUCKET_NAME|bucket_name| Bucket Name|
+|GS_LOCATION|location| Storage Location (folder) inside a bucket|
 
 # Contribution
 
-I would glad to see PRs and ideas for the package unit testing, as well as
-reports about integration experience in different environments.
+I would glad to see PRs and ideas for the package testing for different environments,
+as well as reports about integration experience.

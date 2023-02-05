@@ -14,7 +14,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 from django_storage_celery_results import __version__ as version
 
-setuptools.setup(
+setup(
     name='django_storage_celery_results',
 
     description='Django-Storage-Celery-Result - the application introducing Django Storage-based Celery Results backend',

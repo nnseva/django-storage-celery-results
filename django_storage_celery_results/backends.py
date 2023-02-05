@@ -1,4 +1,4 @@
-"""s3 result store backend."""
+"""The backend using Django File Storage backends to store results"""
 
 import logging
 import os.path
