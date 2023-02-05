@@ -71,6 +71,22 @@ the installed package:
 CELERY_RESULT_BACKEND = 'django-storage'
 ```
 
+Use `CELERY_RESULT_STORAGE` variable to provide a full path to the
+Django Storage provider class to use as a backend, f.e.:
+
+- to use a Django core provided backend `FileSystemStorage`:
+
+```python
+CELERY_RESULT_STORAGE = 'django.core.files.storage.FileSystemStorage'
+```
+
+- to use a separate django-storages package provided backend `GoogleCloudStorage`:
+
+
+```python
+CELERY_RESULT_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+```
+
 You can use two ways to provide django storage backend-specific parameters
 to the backend constructor simultaneously.
 
@@ -107,6 +123,28 @@ CELERY_RESULT_STORAGE_CONFIG = {
 
 Mixing these two ways, directly passed parameters are preferred by
 the constructor as a rule (depends on the storage backend implementation).
+
+Use the second way to provide specific options to the Django Storage backend
+to use it as a celery storage backend.
+
+For example, you could use a FileSystemStorage for both, media files,
+as well as celery results. You probably would not like to have celery results
+accessible from the WEB, as media files.
+
+For the purpose, you can provide different locations for them, like:
+
+```python
+
+# The default file storage and its settings
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+MEDIA_ROOT = '/data/web/media/`
+
+# Celery results storage specific settings
+CELERY_RESULT_STORAGE = 'django.core.files.storage.FileSystemStorage'
+CELERY_RESULT_STORAGE_CONFIG = {
+    'location': '/data/celery-results/'
+}
+```
 
 # Known Django storage backends
 
@@ -155,6 +193,10 @@ CELERY_RESULT_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 |AWS_LOCATION|location| Storage Location (folder) inside a bucket|
 
 ### Google Cloud Storage
+
+```python
+CELERY_RESULT_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+```
 
 |`settings.py` variable | backend constructor parameter | Meaning from doc|
 |-----------------------|-------------------------------|-----------------|
