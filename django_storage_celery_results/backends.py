@@ -3,13 +3,14 @@
 import logging
 import os.path
 
-from django.conf import settings
-from django.utils.module_loading import import_string
-from django.utils import timezone
-
-from kombu.utils.encoding import bytes_to_str
-from celery.exceptions import ImproperlyConfigured
 from celery.backends.base import KeyValueStoreBackend
+from celery.exceptions import ImproperlyConfigured
+from kombu.utils.encoding import bytes_to_str
+
+from django.conf import settings
+from django.utils import timezone
+from django.utils.module_loading import import_string
+
 
 logger = logging.getLogger(__name__)
 

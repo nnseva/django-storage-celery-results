@@ -206,5 +206,4 @@ CELERY_RESULT_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 
 # Contribution
 
-I would glad to see PRs and ideas for the package testing for different environments,
-as well as reports about integration experience.
+I would glad to see PRs and new ideas, as well as reports about integration experience.

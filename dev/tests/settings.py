@@ -144,8 +144,7 @@ LOGGING = {
 MEDIA_ROOT = BASE_DIR
 
 CELERY_RESULT_BACKEND = 'django_storage_celery_results.backends.StorageBackend'
-CELERY_BROKER_BACKEND = os.environ.get('DJANGO_CELERY_BROKER_BACKEND')
-CELERY_RESULT_EXPIRES = 10
+CELERY_RESULT_EXPIRES = 3  # For testing purposes
 
 CELERY_RESULT_STORAGE = 'django.core.files.storage.FileSystemStorage'
 CELERY_RESULT_STORAGE_CONFIG = {
