@@ -1,0 +1,45 @@
+name: Tests
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 2
+      matrix:
+        include:
+          - python-version: "3.8"
+            toxenv: py38-django{2.2,3.0,3.1,3.2,4.0,4.1}
+          - python-version: "3.9"
+            toxenv: py39-django{3.2,4.0,4.1},syntax
+          - python-version: "3.10"
+            toxenv: py310-django{3.2,4.0,4.1}
+          - python-version: "3.11"
+            toxenv: py311-django{4.0,4.1}
+    steps:
+    - name: Set up RabbitMQ
+      uses: nijel/rabbitmq-action@v1.0.0
+      with:
+        rabbitmq version: '3.8.2'
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install "tox<4"
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Run Tests
+      env:
+        TOXENV: ${{ matrix.toxenv }}
+      run: |
+        tox

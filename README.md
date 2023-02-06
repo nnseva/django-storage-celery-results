@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/nnseva/django-storage-celery-results.svg?branch=master)](https://travis-ci.org/nnseva/django-storage-celery-results)
+[![Tests](https://github.com/nnseva/django-storage-celery-results/actions/workflows/django.yml/badge.svg)](https://github.com/nnseva/django-storage-celery-results/actions/workflows/django.yml)
 
 # Django Storage Celery Results
 
