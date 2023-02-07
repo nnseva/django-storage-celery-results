@@ -27,9 +27,9 @@ class StorageBackend(KeyValueStoreBackend):
     #: Override to call expiration procedure
     supports_autoexpire = False
 
-    def __init__(self, **kwargs):
+    def __init__(self, *av, **kwargs):
         """Constructs an instance of the backend"""
-        super().__init__(**kwargs)
+        super().__init__(*av, **kwargs)
         self.storage = self.app.conf.get('result_storage')
         if self.storage:
             self.storage_config = self.app.conf.get('result_storage_config')
@@ -59,6 +59,8 @@ class StorageBackend(KeyValueStoreBackend):
                 'Can not create an instance of the storage backend: %s(%s)',
                 self.storage, self.storage_config
             )
+        self.safe_to_retry = self.app.conf.get('result_safe_to_retry', False)
+        self.always_retry = bool(self.safe_to_retry)
 
     def get(self, key):
         """Override to implement. Get the value by the key"""
@@ -71,6 +73,8 @@ class StorageBackend(KeyValueStoreBackend):
             logger.info('File not found reading %s, ignored', key)
         except Exception:
             logger.exception('Exception while reading %s', key)
+            # The caller probably might have a logic to resolve it
+            raise
 
     def set(self, key, value):
         """Override to implement. Set a new value by the key"""
@@ -81,6 +85,8 @@ class StorageBackend(KeyValueStoreBackend):
                 f.write(value)
         except Exception:
             logger.exception('Exception while writing %s: %r', key, value)
+            # The caller probably might have a logic to resolve it
+            raise
 
     def delete(self, key):
         """Override to implement. Delete the key"""
@@ -90,6 +96,8 @@ class StorageBackend(KeyValueStoreBackend):
             self.instance.delete(key)
         except Exception:
             logger.exception('Exception while deleting %s', key)
+            # The caller probably might have a logic to resolve it
+            raise
 
     def cleanup(self):
         """
@@ -112,4 +120,23 @@ class StorageBackend(KeyValueStoreBackend):
                 continue
             if (now - modified_time).total_seconds() > self.expires:
                 logger.debug('File %s modified time %s should be deleted', file_name, modified_time)
-                self.delete(file_name)
+                try:
+                    self.delete(file_name)
+                except Exception:
+                    # Ignore deletion exception to allow cleanup as much as possible
+                    pass
+
+    def exception_safe_to_retry(self, exc):
+        """
+        Override to implement.
+
+        Returns True if the exception is safe to retry.
+        """
+        logger.debug('Check if the exception is safe to retry:', exc)
+        if not self.safe_to_retry:
+            return False
+        if callable(self.safe_to_retry):
+            return (self.safe_to_retry)(exc)
+        if self.safe_to_retry is True:
+            return True
+        return isinstance(exc, self.safe_to_retry)

@@ -4,8 +4,11 @@ import os.path
 import shlex
 import subprocess
 import time
+from unittest import mock, skipUnless
 
-from django.test import TestCase
+import celery
+
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 
@@ -95,3 +98,130 @@ class ModuleTest(TestCase):
 
         self.assertFalse(os.path.exists(os.path.join(self.cwd, 'celery-results', 'celery-task-meta-%s' % result.id)))
         self.assertTrue(os.path.exists(os.path.join(self.cwd, 'celery-results', 'celery-task-meta-%s' % result2.id)))
+
+
+@skipUnless(celery.VERSION.major >= 5, 'Celery>=5 required')
+class SafeToRetryTest(TestCase):
+    """Unit test for safe_to_retry settings"""
+    # NOTICE: experimental feature
+    maxDiff = None
+
+    def setUp(self):
+        """Setup necessary objects"""
+
+    def tearDown(self):
+        """Free resources"""
+
+    def test_celery_safe_to_retry_boolean(self):
+        """Test whether the celery works with boolean safe_to_retry"""
+        from celery.exceptions import BackendGetMetaError, BackendStoreError
+        from tests.celery import app
+
+        from django_storage_celery_results.backends import StorageBackend
+
+        with override_settings(
+            CELERY_RESULT_SAFE_TO_RETRY=True,
+            CELERY_RESULT_BACKEND_MAX_RETRIES=3,
+        ):
+            storage_backend = StorageBackend(app)
+
+            ret = storage_backend.get_task_meta('qwertyuiop')
+            self.assertEqual(ret, {'status': 'PENDING', 'result': None})
+
+            def test_open(*av, **kw):
+                self.cnt += 1
+                raise Exception('Test Exception')
+
+            self.cnt = 0
+            with mock.patch('django.core.files.storage.FileSystemStorage.open', mock.MagicMock(side_effect=test_open)):
+                with self.assertRaises(BackendGetMetaError):
+                    ret = storage_backend.get_task_meta('qwertyuiop')
+            self.assertEqual(self.cnt, 4)
+
+            self.cnt = 0
+            with mock.patch('django.core.files.storage.FileSystemStorage.open', mock.MagicMock(side_effect=test_open)):
+                with self.assertRaises(BackendStoreError):
+                    ret = storage_backend.mark_as_started('qwertyuiop')
+            self.assertEqual(self.cnt, 4)
+
+    def test_celery_safe_to_retry_callable(self):
+        """Test whether the celery works with callable safe_to_retry"""
+        from celery.exceptions import BackendGetMetaError, BackendStoreError
+        from tests.celery import app
+
+        from django_storage_celery_results.backends import StorageBackend
+
+        def test_safe_to_retry(exc):
+            return getattr(self, 'safe', False)
+
+        with override_settings(
+            CELERY_RESULT_SAFE_TO_RETRY=test_safe_to_retry,
+            CELERY_RESULT_BACKEND_MAX_RETRIES=3,
+        ):
+            storage_backend = StorageBackend(app)
+
+            ret = storage_backend.get_task_meta('qwertyuiop')
+            self.assertEqual(ret, {'status': 'PENDING', 'result': None})
+
+            def test_open(*av, **kw):
+                self.cnt += 1
+                raise Exception('Test Exception')
+
+            self.cnt = 0
+            with mock.patch('django.core.files.storage.FileSystemStorage.open', mock.MagicMock(side_effect=test_open)):
+                with self.assertRaises(Exception) as r:
+                    ret = storage_backend.get_task_meta('qwertyuiop')
+            self.assertEqual(self.cnt, 1)
+            self.assertEqual(str(r.exception), 'Test Exception')
+
+            self.safe = True
+
+            self.cnt = 0
+            with mock.patch('django.core.files.storage.FileSystemStorage.open', mock.MagicMock(side_effect=test_open)):
+                with self.assertRaises(BackendGetMetaError) as r:
+                    ret = storage_backend.get_task_meta('qwertyuiop')
+            self.assertEqual(self.cnt, 4)
+
+            self.cnt = 0
+            with mock.patch('django.core.files.storage.FileSystemStorage.open', mock.MagicMock(side_effect=test_open)):
+                with self.assertRaises(BackendStoreError) as r:
+                    ret = storage_backend.mark_as_started('qwertyuiop')
+            self.assertEqual(self.cnt, 4)
+
+    def test_celery_safe_to_retry_tuple(self):
+        """Test whether the celery works with tuple safe_to_retry"""
+        from celery.exceptions import BackendGetMetaError
+        from tests.celery import app
+
+        from django_storage_celery_results.backends import StorageBackend
+
+        class E1(Exception):
+            pass
+
+        class E2(Exception):
+            pass
+
+        class E3(E1):
+            pass
+
+        with override_settings(
+            CELERY_RESULT_SAFE_TO_RETRY=(E1,),
+            CELERY_RESULT_BACKEND_MAX_RETRIES=3,
+        ):
+            storage_backend = StorageBackend(app)
+
+            ret = storage_backend.get_task_meta('qwertyuiop')
+            self.assertEqual(ret, {'status': 'PENDING', 'result': None})
+
+            with mock.patch('django.core.files.storage.FileSystemStorage.open', mock.MagicMock(side_effect=E2('e2'))):
+                with self.assertRaises(Exception) as r:
+                    ret = storage_backend.get_task_meta('qwertyuiop')
+            self.assertTrue(isinstance(r.exception, E2))
+
+            with mock.patch('django.core.files.storage.FileSystemStorage.open', mock.MagicMock(side_effect=E1('e1'))):
+                with self.assertRaises(BackendGetMetaError) as r:
+                    ret = storage_backend.get_task_meta('qwertyuiop')
+
+            with mock.patch('django.core.files.storage.FileSystemStorage.open', mock.MagicMock(side_effect=E3('e3'))):
+                with self.assertRaises(BackendGetMetaError) as r:
+                    ret = storage_backend.get_task_meta('qwertyuiop')
